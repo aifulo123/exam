@@ -1,0 +1,121 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+    <div class="home-page" id="second">
+        <div class="wrapper">
+        <div>主机：{{ip}} 性能数据</div>
+        <div><label>负载分布图</label></div>
+        <div class="charts-wrapper">
+        <div id="line" style="height:400px;padding:10px;width: 100%;"></div>
+        </div>
+        <div><label>内存分布图</label></div>
+        <div class="charts-wrapper"><div id="pie" style="height:400px;padding:10px;width: 100%;"></div><div>
+        <div><label>磁盘列表</label></div>
+        <i-table  class="tables" border :columns="table_col" :data="table_list"></i-table>
+        </div>
+    </div>
+</%block>
+<script>
+     new Vue({
+      el: '#second',
+      data: function () {
+        return {
+            ip:"${ip}",
+            biz_id:"${biz_id}",
+            yun_id:"${yun_id}",
+            start_time: '',
+            end_time:'',
+            chartData: {},
+            lineData: {},
+            table_col: [
+                    {
+                        title: '文件系统',
+                        key: 'filesystem'
+                    },
+                    {
+                        title: '总大小',
+                        key: 'size'
+                    },
+                    {
+                        title: '已用大小',
+                        key: 'used'
+                    },
+                    {
+                        title: '可用大小',
+                        key: 'avail'
+                    },
+                    {
+                        title: '使用率',
+                        key: 'use'
+                    },
+                    {
+                        title: 'mounton',
+                        key: 'mounton'
+                    }
+            ],
+            table_list:[]
+        }
+      },
+         methods:{
+             get_data () {
+                 let self = this
+                 axios.get(site_url + 'api/get_fuzai_list/?biz_id='+this.biz_id+'&ip='+this.ip + '&yun_id=' +this.yun_id+'&start_time='+this.start_time+'&end_time='+this.end_time).then(function(response){
+                     self.lineData = response.data["data"]
+                     self.initLineChart()
+
+                 } )
+             },
+             get_disk_rate () {
+                 let self = this
+                 axios.get(site_url + 'api/get_disk_rate/?biz_id='+this.biz_id+'&ip='+this.ip + '&yun_id=' +this.yun_id).then(function(response){
+                     self.chartData = response.data["data"]
+                     self.initPieChart()
+
+                 } )
+             },
+             initPieChart(){
+                 createPieChart({
+                         selector: 'pie', // 图表容器
+                         data: this.chartData, // 图表数据
+                 })
+             },
+             initLineChart(){
+               createBarChart({
+                     selector: 'line', // 图表容器
+                    data: this.lineData, // 图表数据
+                 })
+             },
+              get_dict () {
+                 let self = this
+                 axios.get(site_url + 'api/get_dict/?biz_id='+this.biz_id+'&ip='+this.ip + '&yun_id=' +this.yun_id).then(function(response){
+                     self.table_list = response.data["data"]
+
+                 } )
+             },
+
+         },
+         created(){
+
+         },
+         mounted() {
+             this.get_data()
+             this.get_disk_rate()
+             this.get_dict()
+         }
+    })
+</script>
+<style>
+    .charts-wrapper{
+
+    }
+    .charts-wrapper{
+        width: 50%;
+        float:left;
+        border:1px solid #ddd;
+    }}
+</style>
+
+
+
+

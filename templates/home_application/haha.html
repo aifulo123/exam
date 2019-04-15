@@ -1,0 +1,104 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+    <div class="home-page" id="haha">
+        <div class="wrapper">
+        <div>{{ip}}</div>
+        <div>{{biz_id}}</div>
+        <div>{{yun_id}}</div>
+        <div class="charts-wrapper"><div id="line" style="height:400px;padding:10px;width: 900px;"></div></div>
+        <div class="charts-wrapper"><div id="pie" style="height:400px;padding:10px;width: 500px;"></div><div>
+        
+        <i-table  class="tables" border :columns="table_col" :data="table_list"></i-table>
+        </div>
+    </div>
+</%block>
+<script>
+     new Vue({
+      el: '#haha',
+      data: function () {
+        return {
+            ip:"${ip}",
+            biz_id:"${biz_id}",
+            yun_id:"${yun_id}",
+            chartData: {},
+            lineData: {},
+            table_col: [
+                    {
+                        title: 'filesystem',
+                        key: 'filesystem'
+                    },
+                    {
+                        title: 'size',
+                        key: 'size'
+                    },
+                    {
+                        title: 'used',
+                        key: 'used'
+                    },
+                    {
+                        title: 'avail',
+                        key: 'avail'
+                    },
+                    {
+                        title: 'use',
+                        key: 'use'
+                    },
+                    {
+                        title: 'mounton',
+                        key: 'mounton'
+                    },
+                     {
+                        title: '操作',
+                        key: 'action',
+                        render: (h, params) => {
+                            return h('div', [h('i-button', {
+                                props: {type: 'success', size: 'small'},
+                                style: {margin: '0 5px'},
+                                on: {
+                                    click: () => {
+                                        this.detail(params.row)
+                                    }
+                                }
+                            }, '查看性能'),
+                            h('i-button', {
+                                props: {type: 'error', size: 'small'},
+                                style: {margin: '0 5px'},
+                                on: {
+                                    click: () => {
+                                        this.del(params.row)
+                                    }
+                                }
+                            }, "删除")
+                            ])
+                        }
+                    }
+            ],
+            table_list:[]
+        }
+      },
+         methods:{
+
+         },
+         created(){
+
+         },
+         mounted() {
+         }
+    })
+</script>
+<style>
+    .charts-wrapper{
+
+    }
+    .charts-wrapper{
+        width: 50%;
+        float:left;
+        border:1px solid #ddd;
+    }}
+</style>
+
+
+
+

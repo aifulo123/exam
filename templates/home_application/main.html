@@ -1,0 +1,289 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+    <div class="home-page" id="main">
+        <div class="wrapper">
+        <div>
+        <i-button type="primary" @click="show()" style="float:right">新增主机</i-button>
+        <label>查询ip：</label>
+        <i-input v-model="searchip" placeholder="ip" style="width:400px"></i-input>
+        <i-button type="primary" @click="search_ip()">查询</i-button>
+            <Modal
+        v-model="modal1"
+        title="新增主机"
+        @on-ok="ok"
+        @on-cancel="cancel">
+        <label>选择业务：</label>
+        <i-select v-model="biz">
+        <i-option v-for="item in biz_list" :value="item.bk_biz_id">{{item.bk_biz_name}}</i-option>
+        </i-select>
+        <label>选择集群：</label>
+        <i-select v-model="set">
+        <i-option v-for="item in set_list" :value="item.bk_set_id">{{item.bk_set_name}}</i-option>
+        </i-select>
+        <label>选择主机：</label>
+        <i-select v-model="host">
+        <i-option v-for="item in host_list" :value="item.bk_host_innerip">{{item.bk_host_innerip}}</i-option>
+        </i-select>
+    </Modal>
+                <Modal
+        v-model="modal2"
+        title="修改备注"
+        @on-ok="oks"
+        @on-cancel="cancels">
+        <label>业务：</label>
+        <i-input v-model="detail_biz"></i-input>
+        <label>主机ip：</label>
+        <i-input v-model="detail_ip"></i-input>
+        <label>备注：</label>
+        <i-input type="textarea" :rows="3" v-model="detail_other"></i-input>
+    </Modal>
+        </div>
+        <i-table  class="tables" border :columns="table_col" :data="table_list"></i-table>
+        </div>
+        <Spin fix v-if="showload">
+                <Icon type="load-c" size=18 class="demo-spin-icon-load"></Icon>
+                <div>Loading</div>
+        </Spin>
+        <i-button @click="showload=!showload">sd</i-button>
+    </div>
+</%block>
+<script>
+     new Vue({
+      el: '#main',
+      data: function () {
+        return {
+            showload:false,
+            modal1: false,
+            modal2: false,
+            host: '',
+            biz: '',
+            set: '',
+            detail_id: '',
+            detail_biz: '',
+            detail_ip: '',
+            detail_other: '',
+            searchip: '',
+            biz_list: [],
+            set_list: [],
+            host_list: [],
+            table_list: [],
+            table_col: [
+                    {
+                        title: 'ip',
+                        key: 'ip'
+                    },
+                    {
+                        title: '名称',
+                        key: 'name'
+                    },
+                    {
+                        title: '业务',
+                        key: 'biz'
+                    },
+                    {
+                        title: '云区域',
+                        key: 'yun'
+                    },
+                    {
+                        title: '操作系统',
+                        key: 'system'
+                    },
+                    {
+                        title: '操作',
+                        key: 'action',
+                        render: (h, params) => {
+                            return h('div', [h('i-button', {
+                                props: {type: 'primary', size: 'small'},
+                                style: {margin: '0 5px'},
+                                on: {
+                                    click: () => {
+                                        this.update(params.row)
+                                    }
+                                }
+                            }, '修改'),
+                            h('i-button', {
+                                props: {type: 'success', size: 'small'},
+                                style: {margin: '0 5px'},
+                                on: {
+                                    click: () => {
+                                        this.detail(params.row)
+                                    }
+                                }
+                            }, '查看性能'),
+                            h('i-button', {
+                                props: {type: 'error', size: 'small'},
+                                style: {margin: '0 5px'},
+                                on: {
+                                    click: () => {
+                                        this.del(params.row)
+                                    }
+                                }
+                            }, "删除")
+                            ])
+                        }
+                    }
+                ]
+           
+        }
+      },
+         methods:{
+            show () {
+                this.modal1 = true
+            },
+            ok () {
+                this.add_host()
+                this.modal1 = false
+            },
+            cancel () {
+                this.modal1 = false
+            },
+            oks () {
+                this.modal2 = false
+                let self = this
+                axios.get(site_url + 'api/update_host_other/?id='+this.detail_id+'&other='+this.detail_other).then(function(response){
+                    if(response.data["result"]){
+                        self.$Message.info("修改成功")
+                        self.search_ip()
+                    }
+                    else{
+                        self.$Message.info("修改失败")
+                    }
+
+                })
+
+            },
+            cancels () {
+                this.modal2 = false
+            },
+            get_biz_list () {
+                let self = this
+                axios.get(site_url + 'api/get_biz_list/').then(function(response){
+                    
+                    self.biz_list = response.data["data"]
+                    if(self.biz_list.length>0){
+                        self.biz = self.biz_list[0].bk_biz_id
+                    }
+
+                })
+
+            },
+            get_set_list () {
+                let self = this
+                axios.get(site_url + 'api/get_set_list/?biz_id=' + self.biz).then(function(response){
+                    
+                    self.set_list = response.data["data"]
+                    if(self.set_list.length>0){
+                        self.set = self.set_list[0].bk_set_id
+                    }
+                    else{
+                        self.set = ''
+                    }
+
+                })
+            },
+            get_host_list () {
+                let self = this
+                axios.get(site_url + 'api/get_host_list/?biz_id='+ this.biz + '&set_id=' + this.set).then(function(response){
+                    
+                    self.host_list = response.data["data"]
+                    if(self.host_list.length>0){
+                        self.host = self.host_list[0].bk_host_innerip
+                    }
+                    else{
+                        self.host = ''
+                    }
+
+                })
+
+            },
+            add_host () {
+                let self = this
+                axios.get(site_url + 'api/add_host/?biz_id='+this.biz +'&set_id='+this.set + '&ip=' +this.host).then(function(response){
+                    if (response.data["result"]){
+                        self.$Message.info("新增成功")
+                        self.search_ip()
+                    }
+                    else{
+                        self.$Message.info("新增失败")
+                    }
+                })
+
+            },
+            search_ip () {
+                let self = this
+                axios.get(site_url + 'api/get_db_host_list/?ip=' +this.searchip).then(function(response){
+                    self.table_list = response.data["data"]
+
+                })
+            },
+            update (val) {
+                let self = this
+                this.modal2 = true
+                axios.get(site_url + 'api/get_host_detail/?id=' +val.id).then(function(response){
+                    if(response.data["result"]){
+                        self.detail_id = response.data["data"]["id"]
+                        self.detail_biz = response.data["data"]["biz"]
+                        self.detail_ip = response.data["data"]["ip"]
+                        self.detail_other = response.data["data"]["other"]
+                    }
+
+                })
+
+            },
+            detail (val) {
+                location.href = site_url + 'second/?ip=' + val.ip +'&biz_id=' + val.biz_id + '&yun_id=' + val.yun_id
+
+            },
+            del (val) {
+                let self = this
+                axios.get(site_url + 'api/del_host/?ip='+ val.ip).then(function(response){
+                    if (response.data["result"]){
+                        self.$Message.info("删除成功")
+                        self.search_ip()
+                    }
+                })
+            }
+
+
+
+         },
+        watch : {
+            biz (val) {
+                this.get_set_list()
+            },
+            set (val) {
+                this.get_host_list()
+            }
+
+        },
+        created(){
+            this.get_biz_list()
+
+        }
+    })
+</script>
+<style>
+    .charts-wrapper{
+
+    }
+    .charts-wrapper{
+        width: 50%;
+        float:left;
+        border:1px solid #ddd;
+    }
+    .tables{
+        margin-top:20px;
+    }
+    .demo-spin-icon-load{
+        animation: ani-demo-spin 1s linear infinite;
+    }
+    @keyframes ani-demo-spin {
+        from { transform: rotate(0deg);}
+        50%  { transform: rotate(180deg);}
+        to   { transform: rotate(360deg);}
+    }
+</style>
+
+
